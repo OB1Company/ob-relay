@@ -58,6 +58,7 @@ app.post('/api/v1/test', function(req,res) {
 // POST call to setup the VPS
 app.post('/api/v1/setup', function(req,res) {
 	var ipaddress = req.body.ipaddress;
+	var password = req.body.password;
 	var ssh = new SSH({
 		host: ipaddress,
 		user: 'root',
@@ -67,18 +68,24 @@ app.post('/api/v1/setup', function(req,res) {
 	function gosetup() {
 		ssh
 			// Download the setup script file
-			.exec('wget https://gist.githubusercontent.com/drwasho/bac24f115349475e1f6c4ba91337ab95/raw/95835c32543b3ed7106ee3c1d9aefad3fd0c48b9/setup.sh', {
+			.exec('wget https://gist.githubusercontent.com/drwasho/bac24f115349475e1f6c4ba91337ab95/raw/7c4cfb686d29096808d220a04c8f5ccee6854861/setup.sh', {
 				out: function(stdout) {
 					console.log(stdout);
-					console.log('Setup script downloaded.');
 				}
+			})
+
+			// Modify the 'obuser' password for the VPS
+			.exec('sed -i "4s/.*/echo obuser:' + password + ' | chpasswd/" setup.sh', {
+				out: function(stdout) {
+			 		console.log(stdout);
+			 		console.log('Password changed.');
+			 	}
 			})
 
 			// Change permission of script
 			.exec('chmod +x setup.sh', {
 				out: function(stdout) {
 					console.log(stdout);
-					console.log('Setup script is now executable.');
 				}
 			})
 
@@ -86,7 +93,6 @@ app.post('/api/v1/setup', function(req,res) {
 			.exec('bash setup.sh', {
 				out: function(stdout) {
 					console.log(stdout);
-					console.log('Setup script has finished running. Your VPS is setup and ready to install OpenBazaar.');
 				}
 			})
 		.start();
@@ -113,7 +119,6 @@ app.post('/api/v1/install', function(req,res) {
 			.exec('wget https://gist.githubusercontent.com/drwasho/2fbe71ea57e0f22b52476ade44e2eb9f/raw/e9907cca6356b877862a693c7e9c4fcd6219f533/obinstall.sh', {
 				out: function(stdout) {
 					console.log(stdout);
-					console.log('Install script downloaded.');
 				}
 			})
 
@@ -121,7 +126,6 @@ app.post('/api/v1/install', function(req,res) {
 			.exec('chmod +x obinstall.sh', {
 				out: function(stdout) {
 					console.log(stdout);
-					console.log('Install script is now executable.');
 				}
 			})
 
@@ -129,7 +133,6 @@ app.post('/api/v1/install', function(req,res) {
 			.exec('bash obinstall.sh', {
 				out: function(stdout) {
 					console.log(stdout);
-					console.log('Setup script has finished running. OpenBazaar is now installed.');
 				}
 			})
 
@@ -203,4 +206,49 @@ app.post('/api/v1/stopob', function(req,res) {
 	// Run the function
 	stopob();
 	res.send('Stopping OpenBazaar on your VPS at ' + ipaddress)
+});
+
+// POST call to stop OpenBazaar on the VPS
+app.post('/api/v1/update', function(req,res) {
+	var ipaddress = req.body.ipaddress;
+	var ssh = new SSH({
+		host: ipaddress,
+		user: 'root',
+		key: privatekey
+	});
+	// Update OpenBazaar
+	function update() {
+		ssh
+			// Stop OpenBazaar
+			.exec('(cd /home/obuser/OpenBazaar-Server/; python openbazaard.py stop)', {
+				out: function(stdout) {
+					console.log(stdout);
+				}
+			})
+
+			// Run git pull
+			.exec('(cd /home/obuser/OpenBazaar-Server/; git pull)', {
+				out: function(stdout) {
+					console.log(stdout);
+				}
+			})
+
+			// Remove PID file in case it's there
+			.exec('(cd /home/obuser/OpenBazaar-Server/; rm /tmp/openbazaard.pid)', {
+				out: function(stdout) {
+					console.log(stdout);
+				}
+			})
+
+			// Start OpenBazaar
+			.exec('(cd /home/obuser/OpenBazaar-Server/; python openbazaard.py start -da 0.0.0.0)', {
+				out: function(stdout) {
+					console.log(stdout);
+				}
+			})
+		.start();
+	}
+	// Run the function
+	update();
+	res.send('Updating OpenBazaar on your VPS at ' + ipaddress)
 });
