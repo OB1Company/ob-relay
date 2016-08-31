@@ -46,7 +46,7 @@ app.post('/api/v1/test', function(req,res) {
 			.exec('echo $PATH', {
 				out: function(stdout) {
 					console.log(stdout);
-					res.send('Your IP address is ' + ipaddress + '. Your $PATH is: ' + stdout)
+					res.send('Your IP address is ' + ipaddress + '. Your <code>$PATH</code> is: ' + stdout)
 				}
 			})
 		.start();
@@ -56,26 +56,27 @@ app.post('/api/v1/test', function(req,res) {
 });
 
 // POST call to setup the VPS
-app.post('/api/v1/setup', function(req,res) {
+app.post('/api/v1/provision', function(req,res) {
 	var ipaddress = req.body.ipaddress;
-	var password = req.body.password;
 	var ssh = new SSH({
 		host: ipaddress,
 		user: 'root',
 		key: privatekey
 	});
+	var randomVPSpassword = Math.random().toString(36).slice(-8);
+	var randomOBpassword = Math.random().toString(36).slice(-8);
 	// Setup 'obuser' on the VPS
-	function gosetup() {
+	function provision() {
 		ssh
 			// Download the setup script file
-			.exec('wget https://gist.githubusercontent.com/drwasho/bac24f115349475e1f6c4ba91337ab95/raw/7c4cfb686d29096808d220a04c8f5ccee6854861/setup.sh', {
+			.exec('wget https://gist.githubusercontent.com/drwasho/c8b3b7af2aa41f789cd14ef3d820c3cd/raw/600e351d42b181c98766a92302e333f8547b7029/provision.sh', {
 				out: function(stdout) {
 					console.log(stdout);
 				}
 			})
 
 			// Modify the 'obuser' password for the VPS
-			.exec('sed -i "4s/.*/echo obuser:' + password + ' | chpasswd/" setup.sh', {
+			.exec('sed -i "5s/.*/echo obuser:' + randomVPSpassword + ' | chpasswd/" setup.sh', {
 				out: function(stdout) {
 			 		console.log(stdout);
 			 		console.log('Password changed.');
@@ -83,61 +84,21 @@ app.post('/api/v1/setup', function(req,res) {
 			})
 
 			// Change permission of script
-			.exec('chmod +x setup.sh', {
+			.exec('chmod +x provision.sh', {
 				out: function(stdout) {
 					console.log(stdout);
 				}
 			})
 
 			// Run installation file
-			.exec('bash setup.sh', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-		.start();
-	};
-	// Run the function
-	gosetup();
-	res.send('Setting up your VPS at ' + ipaddress)
-});
-
-// POST call to install OpenBazaar on the VPS
-app.post('/api/v1/install', function(req,res) {
-	var ipaddress = req.body.ipaddress;
-	var username = req.body.username;
-	var password = req.body.password;
-	var ssh = new SSH({
-		host: ipaddress,
-		user: 'root',
-		key: privatekey
-	});
-	// Install OpenBazaar
-	function install() {
-		ssh
-			// Download the installation script file
-			.exec('wget https://gist.githubusercontent.com/drwasho/2fbe71ea57e0f22b52476ade44e2eb9f/raw/e9907cca6356b877862a693c7e9c4fcd6219f533/obinstall.sh', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Change permission of script
-			.exec('chmod +x obinstall.sh', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Run installation file
-			.exec('bash obinstall.sh', {
+			.exec('bash provision.sh', {
 				out: function(stdout) {
 					console.log(stdout);
 				}
 			})
 
 			// Modify the username and password in ob.cfg
-			.exec('sed -i "26s/.*/USERNAME = ' + username + '/" /home/obuser/OpenBazaar-Server/ob.cfg', {
+			.exec('sed -i "26s/.*/USERNAME = obuser/" /home/obuser/OpenBazaar-Server/ob.cfg', {
 				out: function(stdout) {
 			 		console.log(stdout);
 			 		console.log('Username changed.');
@@ -145,17 +106,17 @@ app.post('/api/v1/install', function(req,res) {
 			})
 
 			// Modify the username and password in ob.cfg
-			.exec('sed -i "27s/.*/PASSWORD = ' + password + '/" /home/obuser/OpenBazaar-Server/ob.cfg', {
+			.exec('sed -i "27s/.*/PASSWORD = ' + randomOBpassword + '/" /home/obuser/OpenBazaar-Server/ob.cfg', {
 			 	out: function(stdout) {
 					console.log(stdout);
 					console.log('Password changed.');
 			 	}
 			})
 		.start();
-	}
+	};
 	// Run the function
-	install();
-	res.send('Installing OpenBazaar on your VPS at ' + ipaddress)
+	provision();
+	res.send('<p>Your OpenBazaar node is being provisioned!</p><p><font color="red"><b>Please save the following details as they will not be available after you close this window.</b></font></p><p> Your VPS and OpenBazaar node has this IP address: <font color="blue"><code>' + ipaddress + '</code></font></p><p>Your OpenBazaar username is <font color="blue">obuser</font> and your password is: <font color="blue"><code>' + randomOBpassword + '</code></font>.</p><p>Your temporary VPS login username is <font color="blue">obuser</font> and login password is: <font color="blue"><code>' + randomVPSpassword + '</code></font>.</p>')
 });
 
 // POST call to start OpenBazaar on the VPS
