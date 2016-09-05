@@ -1,2 +1,2 @@
-# miniprovistor
-Node app to facilitate provisioning of OpenBazaar nodes
+# ob-relay
+Node app to relay OpenBazaar-server commands from users for remote management and updating
