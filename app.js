@@ -1,215 +1,174 @@
 console.log('Here we go...');
+'user strict';
 
 /* === VARIABLE CITY === */
 /* ===================== */
 
-var http = require('http');
-var SSH = require('simple-ssh');
-var fs = require('fs');
-var express = require('express');
-var bodyParser = require('body-parser');
+const http = require('http');
+const express = require('express');
+const bodyParser = require('body-parser');
+const exec = require('child_process').exec;
+const fs = require('fs');
 
-var app = express();
-var privatekey = fs.readFileSync('key', 'utf8') // read the private key stored locally
+const app = express();
+
+const Base64 = {
+    
+	_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+	decode: function(input) {
+			var output = "";
+			var chr1, chr2, chr3;
+			var enc1, enc2, enc3, enc4;
+			var i = 0;
+			input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+			while (i < input.length) {
+				enc1 = this._keyStr.indexOf(input.charAt(i++));
+				enc2 = this._keyStr.indexOf(input.charAt(i++));
+				enc3 = this._keyStr.indexOf(input.charAt(i++));
+				enc4 = this._keyStr.indexOf(input.charAt(i++));
+				chr1 = (enc1 << 2) | (enc2 >> 4);
+				chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+				chr3 = ((enc3 & 3) << 6) | enc4;
+				output = output + String.fromCharCode(chr1);
+				if (enc3 != 64) {
+					output = output + String.fromCharCode(chr2);
+				}
+				if (enc4 != 64) {
+					output = output + String.fromCharCode(chr3);
+				}
+			}
+			output = Base64._utf8_decode(output);
+			return output;
+		},
+    _utf8_decode: function(utftext) {
+        var string = "";
+        var i = 0;
+        var c = c1 = c2 = 0;
+
+        while (i < utftext.length) {
+
+            c = utftext.charCodeAt(i);
+
+            if (c < 128) {
+                string += String.fromCharCode(c);
+                i++;
+            }
+            else if ((c > 191) && (c < 224)) {
+                c2 = utftext.charCodeAt(i + 1);
+                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                i += 2;
+            }
+            else {
+                c2 = utftext.charCodeAt(i + 1);
+                c3 = utftext.charCodeAt(i + 2);
+                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                i += 3;
+            }
+
+        }
+        return string;
+    }
+}
+
+/* === Configuration === */
+/* ===================== */
+
+var port = process.env.PORT || 8080; // used to create, sign, and verify tokens
+
+// use body parser so we can get info from POST and/or URL parameters
 app.use(bodyParser.json()); // support json encoded bodies
-app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies ==> watch this
 
-/* === Run the Server === */
-/* ====================== */
+// read the authorization password locally
+const authpassword = fs.readFileSync('password', 'utf8'); 
 
-app.listen(8080, function () {
-  console.log('Example app listening on port 8080!');
+
+/* === Routes === */
+/* ============== */
+
+/* === Start the Server === */
+
+app.listen(port);
+console.log('Magic happens at http://localhost:' + port);
+
+/* === Basic Route === */
+app.get('/', function(req, res) {
+	res.send('Hello! The API is at http://localhost:' + port + '/api/v1');
 });
 
-/* === REST GET Calls === */
-/* ====================== */
-
-app.get('/', function(req,res) {
-	res.send('Testing ground...');
-});
-
-/* === REST POST Calls === */
-/* ======================= */
+/* === API Routes === */
 
 // POST call to test access to the VPS is working
-app.post('/api/v1/test', function(req,res) {
-	var ipaddress = req.body.ipaddress;
-	var ssh = new SSH({
-		host: ipaddress,
-		user: 'root',
-		key: privatekey
+app.post('/api/v1/test', function(req, res) {
+	var password = req.body.password;
+	var $password = Base64.decode(password);
+	if ($password == authpassword) {
+		var cmd = 'echo %PATH%';
+		exec(cmd, function(error, stdout, stderr) {
+			console.log(stdout);
+			res.send(stdout);
+		});
+	} else {
+		console.log('Password is incorrect');
+		res.status(401);
+		res.send('Password is incorrect');
+		return;
+		};
 	});
-	// Test to make sure SSH is working
-	function test() {
-		ssh
-			// Echo the $PATH
-			.exec('echo $PATH', {
-				out: function(stdout) {
-					console.log(stdout);
-					res.send('Your IP address is ' + ipaddress + '. Your <code>$PATH</code> is: ' + stdout)
-				}
-			})
-		.start();
-	}
-	// Run the function
-	test();
-});
-
-// POST call to setup the VPS
-app.post('/api/v1/provision', function(req,res) {
-	var ipaddress = req.body.ipaddress;
-	var ssh = new SSH({
-		host: ipaddress,
-		user: 'root',
-		key: privatekey
-	});
-	var randomVPSpassword = Math.random().toString(36).slice(-8);
-	var randomOBpassword = Math.random().toString(36).slice(-8);
-	// Setup 'obuser' on the VPS
-	function provision() {
-		ssh
-			// Download the setup script file
-			.exec('wget https://gist.githubusercontent.com/drwasho/c8b3b7af2aa41f789cd14ef3d820c3cd/raw/600e351d42b181c98766a92302e333f8547b7029/provision.sh', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Modify the 'obuser' password for the VPS
-			.exec('sed -i "5s/.*/echo obuser:' + randomVPSpassword + ' | chpasswd/" setup.sh', {
-				out: function(stdout) {
-			 		console.log(stdout);
-			 		console.log('Password changed.');
-			 	}
-			})
-
-			// Change permission of script
-			.exec('chmod +x provision.sh', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Run installation file
-			.exec('bash provision.sh', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Modify the username and password in ob.cfg
-			.exec('sed -i "26s/.*/USERNAME = obuser/" /home/obuser/OpenBazaar-Server/ob.cfg', {
-				out: function(stdout) {
-			 		console.log(stdout);
-			 		console.log('Username changed.');
-			 	}
-			})
-
-			// Modify the username and password in ob.cfg
-			.exec('sed -i "27s/.*/PASSWORD = ' + randomOBpassword + '/" /home/obuser/OpenBazaar-Server/ob.cfg', {
-			 	out: function(stdout) {
-					console.log(stdout);
-					console.log('Password changed.');
-			 	}
-			})
-		.start();
-	};
-	// Run the function
-	provision();
-	res.send('<p>Your OpenBazaar node is being provisioned!</p><p><font color="red"><b>Please save the following details as they will not be available after you close this window.</b></font></p><p> Your VPS and OpenBazaar node has this IP address: <font color="blue"><code>' + ipaddress + '</code></font></p><p>Your OpenBazaar username is <font color="blue">obuser</font> and your password is: <font color="blue"><code>' + randomOBpassword + '</code></font>.</p><p>Your temporary VPS login username is <font color="blue">obuser</font> and login password is: <font color="blue"><code>' + randomVPSpassword + '</code></font>.</p>')
-});
 
 // POST call to start OpenBazaar on the VPS
 app.post('/api/v1/runob', function(req,res) {
-	var ipaddress = req.body.ipaddress;
-	var ssh = new SSH({
-		host: ipaddress,
-		user: 'root',
-		key: privatekey
+	var password = req.body.password;
+	var $password = Base64.decode(password);
+	if ($password == authpassword) {
+		var cmd = '/home/openbazaar/src/openbazaard.py start -a 0.0.0.0';
+		exec(cmd, function(error, stdout, stderr) {
+			console.log(stdout);
+			res.send(stdout);
+		});
+	} else {
+		console.log('Password is incorrect');
+		res.status(401);
+		res.send('Password is incorrect');
+		return;
+		};
 	});
-	// Run OpenBazaar
-	function runob() {
-		ssh
-			// Run the server
-			.exec('(cd /home/obuser/OpenBazaar-Server/; python openbazaard.py start -da 0.0.0.0)', {
-				out: function(stdout) {
-					console.log(stdout);
-					console.log('OpenBazaar is running at ' + ipaddress);
-				}
-			})
-		.start();
-	}
-	// Run the function
-	runob();
-	res.send('Running OpenBazaar on your VPS at ' + ipaddress)
-});
 
 // POST call to stop OpenBazaar on the VPS
 app.post('/api/v1/stopob', function(req,res) {
-	var ipaddress = req.body.ipaddress;
-	var ssh = new SSH({
-		host: ipaddress,
-		user: 'root',
-		key: privatekey
+	var password = req.body.password;
+	var $password = Base64.decode(password);
+	if ($password == authpassword) {
+		var cmd = '/home/openbazaar/src/openbazaard.py stop';
+		exec(cmd, function(error, stdout, stderr) {
+			console.log(stdout);
+			res.send(stdout);
+		});
+	} else {
+		console.log('Password is incorrect');
+		res.status(401);
+		res.send('Password is incorrect');
+		return;
+		};
 	});
-	// Stop OpenBazaar
-	function stopob() {
-		ssh
-			// Stop the server
-			.exec('(cd /home/obuser/OpenBazaar-Server/; python openbazaard.py stop)', {
-				out: function(stdout) {
-					console.log(stdout);
-					console.log('OpenBazaar has stopped.');
-				}
-			})
-		.start();
-	}
-	// Run the function
-	stopob();
-	res.send('Stopping OpenBazaar on your VPS at ' + ipaddress)
-});
 
-// POST call to stop OpenBazaar on the VPS
-app.post('/api/v1/update', function(req,res) {
-	var ipaddress = req.body.ipaddress;
-	var ssh = new SSH({
-		host: ipaddress,
-		user: 'root',
-		key: privatekey
+// POST call to update and restart OpenBazaar on the VPS
+app.post('/api/v1/updateob', function(req,res) {
+	var password = req.body.password;
+	var $password = Base64.decode(password);
+	if ($password == authpassword) {
+		var cmd = '/home/openbazaar/src/openbazaard.py stop'; // stops the server
+		var cmd = '/home/openbazaar/src/ git pull'; // updates to the latest code
+		var cmd = 'rm /home/openbazaar/src/tmp/openbazaard.pid'; // get rid of pesky pid file that sometimes lingers
+		var cmd = '/home/openbazaar/src/openbazaard.py start -a 0.0.0.0'; // start the server in daemon mode again
+		exec(cmd, function(error, stdout, stderr) {
+			console.log(stdout);
+			res.send(stdout);
+		});
+	} else {
+		console.log('Password is incorrect');
+		res.status(401);
+		res.send('Password is incorrect');
+		return;
+		};
 	});
-	// Update OpenBazaar
-	function update() {
-		ssh
-			// Stop OpenBazaar
-			.exec('(cd /home/obuser/OpenBazaar-Server/; python openbazaard.py stop)', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Run git pull
-			.exec('(cd /home/obuser/OpenBazaar-Server/; git pull)', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Remove PID file in case it's there
-			.exec('(cd /home/obuser/OpenBazaar-Server/; rm /tmp/openbazaard.pid)', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-
-			// Start OpenBazaar
-			.exec('(cd /home/obuser/OpenBazaar-Server/; python openbazaard.py start -da 0.0.0.0)', {
-				out: function(stdout) {
-					console.log(stdout);
-				}
-			})
-		.start();
-	}
-	// Run the function
-	update();
-	res.send('Updating OpenBazaar on your VPS at ' + ipaddress)
-});
