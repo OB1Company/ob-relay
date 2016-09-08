@@ -121,7 +121,7 @@ app.get('/api/v1/status', function(req, res) {
 	console.log(password);
 	var $password = Base64.decode(password);
 	console.log($password);
-	console.log('authpassword is: ' + authpassword)
+	console.log('authpassword is: ' + authpassword);
 	if ($password == authpassword) {
 		var cmd = 'ps cax | grep python';
 		exec(cmd, function(error, stdout, stderr) {
