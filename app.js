@@ -80,14 +80,13 @@ app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies ==> watch this
 
 // read the authorization password locally
-const authpassword = fs.readFileSync('password', 'utf8'); 
+const authpassword = fs.readFileSync('password', 'utf-8'); 
 
 
 /* === Routes === */
 /* ============== */
 
 /* === Start the Server === */
-
 app.listen(port);
 console.log('Magic happens at http://localhost:' + port);
 
@@ -116,12 +115,36 @@ app.post('/api/v1/test', function(req, res) {
 		};
 	});
 
+// GET call to test if OpenBazaar is online
+app.get('/api/v1/status', function(req, res) {
+	var password = req.param('password');
+	console.log(password);
+	var $password = Base64.decode(password);
+	console.log($password);
+	console.log('authpassword is: ' + authpassword)
+	if ($password == authpassword) {
+		var cmd = 'ps cax | grep python';
+		exec(cmd, function(error, stdout, stderr) {
+			if (stdout != '') {
+				res.send('OpenBazaar is up.');
+			} else {
+				res.send('OpenBazaar is offline.');
+			};
+		});
+	} else {
+		console.log('Password is incorrect');
+		res.status(401);
+		res.send('Password is incorrect');
+		return;
+		};
+});
+
 // POST call to start OpenBazaar on the VPS
 app.post('/api/v1/runob', function(req,res) {
 	var password = req.body.password;
 	var $password = Base64.decode(password);
 	if ($password == authpassword) {
-		var cmd = '/home/openbazaar/src/openbazaard.py start -a 0.0.0.0';
+		var cmd = 'python /home/openbazaar/src/openbazaard.py start -a 0.0.0.0';
 		exec(cmd, function(error, stdout, stderr) {
 			console.log(stdout);
 			res.send(stdout);
@@ -139,7 +162,7 @@ app.post('/api/v1/stopob', function(req,res) {
 	var password = req.body.password;
 	var $password = Base64.decode(password);
 	if ($password == authpassword) {
-		var cmd = '/home/openbazaar/src/openbazaard.py stop';
+		var cmd = '/home/openbazaar/venv/bin/python /home/openbazaar/src/openbazaard.py stop';
 		exec(cmd, function(error, stdout, stderr) {
 			console.log(stdout);
 			res.send(stdout);
@@ -157,10 +180,9 @@ app.post('/api/v1/updateob', function(req,res) {
 	var password = req.body.password;
 	var $password = Base64.decode(password);
 	if ($password == authpassword) {
-		var cmd = '/home/openbazaar/src/openbazaard.py stop'; // stops the server
-		var cmd = '/home/openbazaar/src/ git pull'; // updates to the latest code
-		var cmd = 'rm /home/openbazaar/src/tmp/openbazaard.pid'; // get rid of pesky pid file that sometimes lingers
-		var cmd = '/home/openbazaar/src/openbazaard.py start -a 0.0.0.0'; // start the server in daemon mode again
+		var cmd = '/home/openbazaar/venv/bin/python /home/openbazaar/src/openbazaard.py stop'; // stops the server
+		var cmd = 'git -C /home/openbazaar/src pull'; // updates to the latest code
+		var cmd = '/home/openbazaar/venv/bin/python /home/openbazaar/src/openbazaard.py start -a 0.0.0.0'; // start the server in daemon mode again
 		exec(cmd, function(error, stdout, stderr) {
 			console.log(stdout);
 			res.send(stdout);
