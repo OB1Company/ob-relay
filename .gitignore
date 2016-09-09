@@ -39,3 +39,6 @@ jspm_packages
 # SSH keys
 key
 key.pub
+
+# C-Tags
+.tags*
