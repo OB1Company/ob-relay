@@ -2,7 +2,11 @@
   "name": "OB-Relay",
   "version": "0.0.1",
   "description": "Relay server for OpenBazaar-Server provisioned by EasyBazaar",
+  "author": "OB1.io",
+  "contributors": ["Washington Sanchez", "Tyler Smith <tyler@ob1.io>"],
+  "keywords": ["openbazaar", "server", "ob", "easybazaar"],
   "main": "app.js",
+  "bin": "./app.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/OpenBazaar/ob-relay.git"
@@ -14,6 +18,10 @@
     "start": "node --harmony app.js",
     "test": "mocha tests/unit"
   },
+  "engines": {
+     "node": ">=6.0.0",
+     "npm": ">=3.0.0"
+   },
   "dependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
@@ -25,5 +33,6 @@
     "chai": "^3.5.0",
     "mocha": "^3.0.2",
     "supertest": "^2.0.0"
-  }
+  },
+  "os": ["linux"]
 }
