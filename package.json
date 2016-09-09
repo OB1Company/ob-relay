@@ -1,7 +1,7 @@
 {
   "name": "OB-Relay",
   "version": "0.0.1",
-  "description": "Relay server for OpenBazaar-Server provisioned by Miniprovistor",
+  "description": "Relay server for OpenBazaar-Server provisioned by EasyBazaar",
   "main": "app.js",
   "repository": {
     "type": "git",
