@@ -5,7 +5,7 @@ console.log('Here we go...');
 const app = require('express')();
 
 // Add routes
-app.use("api/v1", require("./routes/api"))
+app.use("/api/v1", require("./routes/api"))
 app.use("/sessions", require("./routes/sessions"))
 
 // Set port
