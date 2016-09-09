@@ -15,7 +15,7 @@
   "bugs": "https://github.com/OpenBazaar/ob-relay/issues/",
   "license": "MIT",
   "scripts": {
-    "start": "node --harmony app.js",
+    "start": "node app.js",
     "test": "mocha tests/unit"
   },
   "engines": {
