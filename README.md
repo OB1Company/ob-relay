@@ -7,4 +7,4 @@ Node app to relay OpenBazaar-server commands from users for remote management an
 
 # Run
 
-`npm start`
+`OB_RELAY_SESSION_SECRET=superSecret npm start`
