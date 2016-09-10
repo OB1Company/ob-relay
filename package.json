@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "Relay server for OpenBazaar-Server provisioned by EasyBazaar",
   "author": "OB1.io",
-  "contributors": ["Washington Sanchez", "Tyler Smith <tyler@ob1.io>"],
-  "keywords": ["openbazaar", "server", "ob", "easybazaar"],
+  "contributors": ["Dr Washington Y. Sanchez <washington@ob1.io>", "Tyler Smith <tyler@ob1.io>"],
+  "keywords": ["openbazaar", "server", "ob", "easybazaar", "bitcoin"],
   "main": "app.js",
   "bin": "./app.js",
   "repository": {
