@@ -27,26 +27,14 @@ describe("SessionStore", function () {
   });
 
   describe("#constructor", function () {
-    it("should fail if secret is empty", function () {
-      expect(function () {
-        new sessionStore("", "");
-      }).to.throw("Session secret must be at least 32 characters");
-    });
-
-    it("should fail if secret is too short", function () {
-      expect(function () {
-        new sessionStore(shortSecret, "");
-      }).to.throw("Session secret must be at least 32 characters");
-    });
-
     it("should fail if dbFile doesn't exist ", function () {
       expect(function () {
-        new sessionStore(validSecret, "fakeFile");
+        new sessionStore("fakeFile");
       }).to.throw("Database file not found: fakeFile");
     });
 
-    it("should succeed if we have valid secret and dbFile", function () {
-      new sessionStore(validSecret, dbFile);
+    it("should succeed if we have valid dbFile", function () {
+      new sessionStore(dbFile);
     });
   });
 });
