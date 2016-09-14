@@ -3,8 +3,13 @@ sudo: false
 node_js:
   - "6.3"
   - "6.0"
-  - "iojs"
-install:
-  - npm install --dev
 script:
   - npm test
+  - node-deb -- app.js package.json lib/ node_modules/
+deploy:
+  provider: releases
+  api_key: "$GITHUB_TOKEN"
+  file:
+    # TODO: Figure out how to make this dynamic
+    - "ob-relay_0.0.1_all.deb"
+  skip_cleanup: true

@@ -32,7 +32,16 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "mocha": "^3.0.2",
-    "supertest": "^2.0.0"
+    "supertest": "^2.0.0",
+    "node-deb": "0.1.16"
   },
-  "os": ["linux"]
+  "os": ["linux"],
+  "node-deb": {
+    "description": "A control server for OpenBazaar nodes.",
+    "executable_name": "ob-relay",
+    "group": "openbazaar",
+    "user": "openbazaar",
+    "maintainer": "OB1.io"
+  }
 }
+
