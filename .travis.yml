@@ -9,7 +9,7 @@ script:
 deploy:
   provider: releases
   api_key: "$GITHUB_TOKEN"
-  file:
-    # TODO: Figure out how to make this dynamic
-    - "ob-relay_0.0.1_all.deb"
+  file: "ob-relay_0.0.1_all.deb" # TODO: Figure out how to make this dynamic
   skip_cleanup: true
+  on:
+    tags: true
