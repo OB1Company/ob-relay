@@ -1,14 +1,28 @@
 "use strict";
 
 // Imports
+const fs = require("fs");
+const https = require("https");
 const serverFactory = require("./lib/server");
 
 // Config
 const port = process.env.OB_RELAY_PORT || 8080;
 const sessionDBFile = process.env.OB_RELAY_DB_FILE || "/home/openbazaar/obdata/OB-Mainnet.db";
 const stateFile = process.env.OB_RELAY_STATE_FILE || "/home/openbazaar/.easybazaar_state";
+const sslCertFile = process.env.OB_RELAY_SSL_CERT;
+const sslKeyFile = process.env.OB_RELAY_SSL_KEY;
 
 // Create server
-serverFactory(port, sessionDBFile, stateFile).bind();
+var server = serverFactory(sessionDBFile, stateFile);
 
-console.log("ob-relay listening on http://localhost:" + port);
+// Use SSL if we have a cert and key set
+if (sslCertFile && sslKeyFile) {
+  server = https.createServer({
+    key: fs.readFileSync(sslKeyFile),
+    cert: fs.readFileSync(sslCertFile)
+  }, server);
+}
+
+server.listen(port);
+
+console.log("ob-relay listening on http" + ((sslCertFile && sslKeyFile) ? 's' : '') + "://localhost:" + port);
