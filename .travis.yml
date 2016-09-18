@@ -4,6 +4,7 @@ node_js:
   - "6.3"
   - "6.0"
 script:
+  - npm install node-deb@0.1.16
   - npm test
   - node-deb -n ob-relay.deb -- app.js package.json lib/ node_modules/
 before_deploy:
