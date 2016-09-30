@@ -8,7 +8,7 @@ const serverFactory = require("./lib/server");
 // Config
 const port = process.env.OB_RELAY_PORT || 8080;
 const sessionDBFile = process.env.OB_RELAY_DB_FILE || "/home/openbazaar/data/OB-Mainnet.db";
-const stateFile = process.env.OB_RELAY_STATE_FILE || "/home/openbazaar/.easybazaar/state";
+const stateFile = process.env.OB_RELAY_STATE_FILE || "/home/openbazaar/.deploy/state";
 const sslCertFile = process.env.OB_RELAY_SSL_CERT_FILE;
 const sslKeyFile = process.env.OB_RELAY_SSL_KEY_FILE;
 
