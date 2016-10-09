@@ -13,7 +13,7 @@ const sslCertFile = process.env.OB_RELAY_SSL_CERT_FILE;
 const sslKeyFile = process.env.OB_RELAY_SSL_KEY_FILE;
 
 // Create server
-var server = serverFactory(sessionDBFile, stateFile);
+var server = serverFactory(sessionDBFile, stateFile, sslCertFile);
 
 // Use SSL if we have a cert and key set
 if (sslCertFile && sslKeyFile) {
